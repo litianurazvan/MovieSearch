@@ -7,32 +7,71 @@
 //
 
 import UIKit
+import Combine
 
 class ViewController: UIViewController {
 
-    @IBOutlet weak var tableView: UITableView! {
+    @IBOutlet private weak var tableView: UITableView! {
         didSet {
-            tableView.dataSource = self
-            tableView.delegate = self
+            tableView.dataSource = searchDataSource
+            tableView.delegate = searchDataSource
         }
     }
     
-    let movies = Movie.all
-
-}
-
-extension ViewController: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        movies.count
+    private var resultsTableController: ResultsTableController!
+    private var searchController: UISearchController!
+    
+    private var filterSubscriber: AnyCancellable?
+    
+    private let movieManager = MovieManager()
+    
+    lazy private var searchDataSource: SearchControllerDataSource = {
+        SearchControllerDataSource(movieManager: movieManager)
+    }()
+    
+    fileprivate func subscribeWithSink() -> AnyCancellable {
+        // Subscribing to a published can be done with sink
+        // Subscribe using sink returns a Subscriber protocol type and needs to be type erased
+        
+        return AnyCancellable(movieManager.filterPublisher.sink { [unowned self] filteredResults in
+            self.resultsTableController.filteredProducts = filteredResults
+        })
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TableCell", for: indexPath)
-        let movie = movies[indexPath.row]
-        cell.textLabel?.text  = movie.name
-        cell.detailTextLabel?.text = movie.releaseDate
+    fileprivate func subscribeWithAssign() -> AnyCancellable {
+        // Another way to subscribe is using assing to which used keypaths to write to an object's property
         
-        return cell
+        return movieManager.filterPublisher
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.filteredProducts, on: resultsTableController)
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        
+        resultsTableController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "ResultsTableController")
+        
+        searchController = UISearchController(searchResultsController: resultsTableController)
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Movies"
+        navigationItem.searchController = searchController
+        
+        
+        // Choose one
+//        filterSubscriber = subscribeWithSink()
+        filterSubscriber = subscribeWithAssign()
+        
+        definesPresentationContext = true
     }
 }
 
+// MARK:- Search Delegate
+
+extension ViewController: UISearchResultsUpdating {
+    func updateSearchResults(for searchController: UISearchController) {
+        guard let searchKey = searchController.searchBar.text else { return }
+        movieManager.searchKey = searchKey
+    }
+}
