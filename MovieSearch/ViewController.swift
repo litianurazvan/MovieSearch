@@ -33,8 +33,8 @@ class ViewController: UIViewController {
         // Subscribing to a published can be done with sink
         // Subscribe using sink returns a Subscriber protocol type and needs to be type erased
         
-        return AnyCancellable(movieManager.filterPublisher.sink { [unowned self] filteredResults in
-            self.resultsTableController.filteredProducts = filteredResults
+        return AnyCancellable(movieManager.filterPublisher.sink { [unowned self] searchResultsManager in
+            self.resultsTableController.searchResultsManager = searchResultsManager
         })
     }
     
@@ -43,7 +43,7 @@ class ViewController: UIViewController {
         
         return movieManager.filterPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: \.filteredProducts, on: resultsTableController)
+            .assign(to: \.searchResultsManager, on: resultsTableController)
     }
     
     override func viewDidLoad() {
@@ -51,6 +51,7 @@ class ViewController: UIViewController {
         
         
         resultsTableController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "ResultsTableController")
+        resultsTableController.searchResultsManager = SearchResultsManager()
         
         searchController = UISearchController(searchResultsController: resultsTableController)
         searchController.searchResultsUpdater = self

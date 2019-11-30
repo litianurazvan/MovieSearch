@@ -9,23 +9,22 @@ import UIKit
 
 class ResultsTableController: UITableViewController {
     
-    var filteredProducts = [Movie]() {
+    var searchResultsManager: SearchResultsManager! {
         didSet {
-            
-            print(filteredProducts)
             tableView.reloadData()
         }
     }
     
+    
     // MARK: - UITableViewDataSource
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return filteredProducts.count
+        return searchResultsManager.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "TableCell", for: indexPath)
-        let movie = filteredProducts[indexPath.row]
+        let movie = searchResultsManager.movie(for: indexPath)
         cell.textLabel?.text  = movie.name
         cell.detailTextLabel?.text = movie.releaseDate
         

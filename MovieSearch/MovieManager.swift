@@ -21,22 +21,22 @@ final class MovieManager {
             .map { [unowned self] searchKey in
                 self.filter(by: searchKey)
             }
+            .map(SearchResultsManager.init)
+            .eraseToAnyPublisher()
     }()
     
     let movies: [Movie]
-    var count: Int {
-        return movies.count
-    }
+    var count: Int { movies.count }
     
     init(movies: [Movie] = Movie.all) {
         self.movies = movies
     }
     
     func movie(for indexPath: IndexPath) -> Movie {
-        return movies[indexPath.row]
+        movies[indexPath.row]
     }
     
     func filter(by searchKey: String) -> [Movie] {
-        return movies.filter { $0.name.contains(searchKey) }
+        movies.filter { $0.name.contains(searchKey) }
     }
 }
